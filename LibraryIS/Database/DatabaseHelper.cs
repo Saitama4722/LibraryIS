@@ -9,13 +9,23 @@ namespace LibraryIS.Database
     {
         private static readonly string DbFileName = "library.db";
 
+        private static string _connectionStringOverride;
+
         public static string ConnectionString
         {
             get
             {
+                if (!string.IsNullOrEmpty(_connectionStringOverride))
+                    return _connectionStringOverride;
+
                 string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, DbFileName);
                 return "Data Source=" + path + ";Version=3;";
             }
+        }
+
+        public static void SetConnectionString(string connectionString)
+        {
+            _connectionStringOverride = connectionString;
         }
 
         public static SQLiteConnection GetConnection()
@@ -23,6 +33,55 @@ namespace LibraryIS.Database
             var connection = new SQLiteConnection(ConnectionString);
             connection.Open();
             return connection;
+        }
+
+        public static void CreateSchema(SQLiteConnection connection)
+        {
+            string createBooks = @"
+                CREATE TABLE IF NOT EXISTS Books (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Title TEXT NOT NULL,
+                    Author TEXT NOT NULL,
+                    Genre TEXT,
+                    Year INTEGER,
+                    ISBN TEXT,
+                    TotalCopies INTEGER NOT NULL DEFAULT 1,
+                    AvailableCopies INTEGER NOT NULL DEFAULT 1
+                );";
+
+            string createReaders = @"
+                CREATE TABLE IF NOT EXISTS Readers (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    FullName TEXT NOT NULL,
+                    BirthDate TEXT,
+                    CardNumber TEXT NOT NULL UNIQUE,
+                    Phone TEXT
+                );";
+
+            string createLoans = @"
+                CREATE TABLE IF NOT EXISTS LoanRecords (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    BookId INTEGER NOT NULL,
+                    ReaderId INTEGER NOT NULL,
+                    LoanDate TEXT NOT NULL,
+                    DueDate TEXT NOT NULL,
+                    ReturnDate TEXT,
+                    FOREIGN KEY (BookId) REFERENCES Books(Id),
+                    FOREIGN KEY (ReaderId) REFERENCES Readers(Id)
+                );";
+
+            string createUsers = @"
+                CREATE TABLE IF NOT EXISTS Users (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Login TEXT NOT NULL UNIQUE,
+                    Password TEXT NOT NULL,
+                    Role TEXT NOT NULL DEFAULT 'admin'
+                );";
+
+            using (var c = new SQLiteCommand(createBooks, connection)) c.ExecuteNonQuery();
+            using (var c = new SQLiteCommand(createReaders, connection)) c.ExecuteNonQuery();
+            using (var c = new SQLiteCommand(createLoans, connection)) c.ExecuteNonQuery();
+            using (var c = new SQLiteCommand(createUsers, connection)) c.ExecuteNonQuery();
         }
 
         public static void InitializeDatabase()

@@ -12,6 +12,10 @@ namespace LibraryIS.Repositories
     {
         public bool RegisterReader(Models.Reader reader)
         {
+            if (reader == null) return false;
+            if (string.IsNullOrWhiteSpace(reader.FullName)) return false;
+            if (string.IsNullOrWhiteSpace(reader.CardNumber)) return false;
+
             try
             {
                 using (var connection = DatabaseHelper.GetConnection())
@@ -23,8 +27,6 @@ namespace LibraryIS.Repositories
                         long cnt = (long)check.ExecuteScalar();
                         if (cnt > 0)
                         {
-                            MessageBox.Show("Читатель с таким номером билета уже существует.",
-                                "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             return false;
                         }
                     }

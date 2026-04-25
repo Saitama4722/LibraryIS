@@ -11,6 +11,10 @@ namespace LibraryIS.Repositories
     {
         public bool AddBook(Book book)
         {
+            if (book == null) return false;
+            if (string.IsNullOrWhiteSpace(book.Title)) return false;
+            if (book.TotalCopies <= 0) return false;
+
             try
             {
                 using (var connection = DatabaseHelper.GetConnection())
@@ -132,6 +136,7 @@ namespace LibraryIS.Repositories
 
         public bool UpdateAvailableCopies(int id, int availableCopies)
         {
+            if (availableCopies < 0) return false;
             try
             {
                 using (var connection = DatabaseHelper.GetConnection())
